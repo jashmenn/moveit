@@ -1,7 +1,21 @@
-= moveit
+moveit
+------
 
 Description goes here.
 
-== Copyright
+
+uses
+----
+
+we have the logfiles in a local folder and we want to put them in hdfs in chunks
+we have the logfiles in a remote folder and we want to put them in hdfs in chunks
+we have the logfiles in s3 and we want to put them in a folder in chunks
+we have the logfiles in s3 and we want to put them in hdfs in chunks
+
+we have the logfiles in hdfs in chunks and we want to run mapred jobs on them
+we have the results in hdfs in chunks and we want to load them into hive 
+
+Copyright
+---------
 
 Copyright (c) 2009 Nate Murray. See LICENSE for details.
