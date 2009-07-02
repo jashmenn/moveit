@@ -1,10 +1,15 @@
+require 'rubygems'
 require "has_logger"
+require "net/ssh"
 
 # FileUtils for the rest of your storage locations (ssh, s3, hdfs, etc)
 module MoveIt
   module FileSystem
     class Base
       include HasLogger
+
+      def cleanup
+      end
     end
 
     class POSIX < Base
@@ -18,6 +23,10 @@ module MoveIt
         output = @actor.exec!(cmd)
         output.split("\n")
       end
+
+      def cleanup
+        @actor.cleanup
+      end
     end
   end
 
@@ -29,16 +38,17 @@ module MoveIt
 
     attr_accessor :ssh_options
     attr_accessor :connected
-    attr_accessor :ssh_sesssion
+    attr_accessor :ssh_session
 
     def initialize(opts={})
-      @ssh_options = opts[:ssh_options] if opts[:ssh_options]
+      @ssh_options = opts[:ssh_options] || {} 
     end
 
     # connect lazily so we can share connections when doing mvs 
     def exec!(cmd)
       connect! unless @connected
       if using_ssh?
+        ssh_session.exec!(cmd)
       else
         logger.debug(cmd)
         `#{cmd}`
@@ -47,15 +57,21 @@ module MoveIt
 
     def connect!
       if using_ssh?
-        host = ssh_options[:host].delete
-        user = ssh_options[:user].delete || ENV["USER"]
-        @ssh_session = Net::SSH.start(host, user, ssh_options)
+        host = @ssh_options.delete(:host) || "localhost"
+        user = @ssh_options.delete(:user) || ENV["USER"]
+        @ssh_options[:logger]  ||= self.logger if ENV["DEBUG"]
+        @ssh_options[:verbose] ||= :debug      if ENV["DEBUG"]
+        @ssh_session = Net::SSH.start(host, user, @ssh_options)
       end
       @connected = true
     end
 
     def using_ssh?
       ssh_options.keys.size > 0 ? true : false
+    end
+
+    def cleanup
+      ssh_session.close if ssh_session
     end
 
   end
