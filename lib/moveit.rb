@@ -36,6 +36,46 @@ module MoveIt
         "#<#{self.class.to_s}:#{self.object_id}, %s>" % [@actor.using_ssh? ? @actor.ssh_options.inspect : "local"]
       end
     end
+
+    class Hdfs < POSIX # hmm
+      def self.has_hadoop?
+        `which hadoop`
+        $? == 0 ? true : false
+      end
+
+      # direct mapping to hadoop fs cmds
+      %w{ls mkdir rm rmr}.each do |cmd|
+        class_eval <<-EOE
+          def #{cmd}(path)
+            hadoop_fs("-#{cmd} \#{path}")
+          end
+        EOE
+      end
+
+      # cp is a cp local to the hdfs, potentially confusing in light of the Proxy, but should be supported
+      # def cp(from, destination)
+      # end
+
+      def hadoop_fs(cmd)
+        @actor.exec!("hadoop fs #{cmd}")
+      end
+    end
+
+    def Proxy
+      attr_accessor :source
+      attr_accessor :dest
+      def initialize(source_fs, dest_fs)
+        @source = source_fs
+        @dest = dest_fs
+      end
+
+      def cp(source, destination)
+      end
+
+      def are_fs_on_same_node?
+        @source.actor.equals?(@dest.actor)
+      end
+    end
   end
 
   # this class holds delegation to the thing that does the work. 
@@ -56,6 +96,7 @@ module MoveIt
     def exec!(cmd)
       connect! unless @connected
       if using_ssh?
+        logger.debug("ssh: " + cmd)
         ssh_session.exec!(cmd)
       else
         logger.debug(cmd)
@@ -65,21 +106,30 @@ module MoveIt
 
     def connect!
       if using_ssh?
-        host = @ssh_options.delete(:host) || "localhost"
-        user = @ssh_options.delete(:user) || ENV["USER"]
-        @ssh_options[:logger]  ||= self.logger if ENV["DEBUG"]
-        @ssh_options[:verbose] ||= :debug      if ENV["DEBUG"]
-        @ssh_session = Net::SSH.start(host, user, @ssh_options)
+        ssh_opts = @ssh_options.dup
+        host = ssh_opts.delete(:host) || "localhost"
+        user = ssh_opts.delete(:user) || ENV["USER"]
+        ssh_opts[:logger]  ||= self.logger if ENV["DEBUG"]
+        ssh_opts[:verbose] ||= :debug      if ENV["DEBUG"]
+        @ssh_session = Net::SSH.start(host, user, ssh_opts)
       end
       @connected = true
     end
 
     def using_ssh?
-      ssh_options.keys.size > 0 ? true : false
+      @ssh_options.keys.size > 0 ? true : false
     end
 
     def cleanup
       ssh_session.close if ssh_session
+    end
+
+    def equal?(other) 
+      if using_ssh?
+        return self.ssh_options == other.ssh_options
+      else
+        super
+      end
     end
 
   end
