@@ -3,12 +3,7 @@ require 'spec_helper'
 include MoveIt::FileSystem
 
 # requires that you can ssh localhost for this test to pass
-
-# connection = MoveIt.ssh_connection(:host => "master0", :key => "#{ENV["HOME"]}/.ssh/cloudteam_hadoop_master")
-# server = MoveIt::FileSystem::POSIX.new(:via_ssh => connection)
-# hdfs     = MoveIt::FileSystem::Hdfs.new(:via_ssh => connection)
-# server.ls("/mnt/logfiles/inbox")
-# server.file_list("find /mnt/logfiles/inbox | grep 2009")
+# requires "hadoop" binary to be able to connect to an hdfs for hadoop tests to run
 
 describe "Moveit" do
   before(:each) do 
@@ -80,37 +75,38 @@ describe "Moveit" do
 
   describe "Proxy" do
     describe "copying" do
+      # test all supported combinations, eventually it should be all possible combinations
       # [POSIX.new, POSIX.new(:ssh_options => {:host => "localhost"})].each do |source_fs|
-       # [Hdfs.new, Hdfs.new(:ssh_options => {:host => "localhost"})].each do |hdfs|
-      [POSIX.new].each do |source_fs|
-        # [Hdfs.new].each do |hdfs|
-        [POSIX.new].each do |hdfs|
+      #   [Hdfs.new, Hdfs.new(:ssh_options => {:host => "localhost"})].each do |hdfs|
+       [ [POSIX.new, POSIX.new],
+         [POSIX.new, Hdfs.new],
+         [POSIX.new(:ssh_options => {:host => "localhost"}), Hdfs.new(:ssh_options => {:host => "localhost"})] 
+       ].each do |source_fs, dest_fs|
 
           before(:each) do
             pending unless Hdfs.has_hadoop?
             FileUtils.touch(@dir + "/local/bing")
 
             @tmp_dir = "moveit_test_folder2"
-            hdfs.rmr(@tmp_dir) rescue nil
-            files = hdfs.ls("")
+            dest_fs.rmr(@tmp_dir) rescue nil
+            files = dest_fs.ls("")
             files.should_not include(@tmp_dir)
-            hdfs.mkdir(@tmp_dir)
+            dest_fs.mkdir(@tmp_dir)
           end
 
-          describe "#cp from #{source_fs} to #{hdfs}" do
+          describe "#cp from #{source_fs} to #{dest_fs}" do
             it "should work" do
-              proxy = Proxy.new(source_fs, hdfs)
+              proxy = Proxy.new(source_fs, dest_fs)
               proxy.cp(@dir + "/local/bing", @tmp_dir)
-              hdfs.ls(@tmp_dir).should include("bing")
+              dest_fs.ls(@tmp_dir).should include("bing")
             end
           end
 
           after(:each) do
-            hdfs.rmr(@tmp_dir)
+            dest_fs.rmr(@tmp_dir)
           end
 
         end
-      end
     end # local and foreign server
 
     describe "#same_node?" do

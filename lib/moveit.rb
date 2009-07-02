@@ -23,6 +23,22 @@ module MoveIt
         file_list("ls -1 #{dir}")
       end
 
+      def mkdir(dir)
+        @actor.exec!("mkdir #{dir}")
+      end
+
+      def cp(source, dest)
+        @actor.exec!("cp #{source} #{dest}")
+      end
+
+      def rmr(dir)
+        @actor.exec!("rm -rf #{dir}")
+      end
+
+      def rm(dir)
+        @actor.exec!("rm #{dir}")
+      end
+
       def file_list(cmd)
         output = @actor.exec!(cmd)
         output.split("\n")
@@ -72,12 +88,26 @@ module MoveIt
       end
   
       # this method is basically the point of this library
+      # its ugly and immature. my hope is that as it grows in use + tests it will become more clear
+      # how to abstract this 
       def cp(source, destination)
         # possibly helpful pieces of information
 
         # if both fs's are the same class a "cp" will work in any case
-        if @source.class == @dest.class
+        if @source.class.to_s == @dest.class.to_s
           @source.cp(source, destination)
+          return
+        end
+
+        if same_node?
+          case @dest.class.to_s
+            when "MoveIt::FileSystem::Hdfs"
+              @dest.hadoop_fs("-copyFromLocal #{source} #{destination}")
+          else
+            raise "cp from same node with different classses is not complete: #{@source.class.to_s} to #{@dest.class.to_s}"
+          end
+        else
+          raise "cp from different nodes via proxy is not complete"
         end
 
         # possible sources:

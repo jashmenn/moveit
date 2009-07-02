@@ -1,8 +1,19 @@
 moveit
 ------
+"i like to move it, move it" - *Reel 2 Real*
 
-Description goes here.
+`FileUtils` for all the other file systems in your life: scp, ssh, s3, hdfs 
+The idea is seamless `mv` and `cp` between two hosts/formats, and neither of those machines have to be the box running the code (i.e. will ssh if needed and run commands on a remote machine)
 
+status
+------
+pre-alpha. what is implemented is functional, but it still falls fall short of the overall goal.
+
+under active development.
+
+friends
+-------
+(basket)[http://github.com/jashmenn/basket/tree/master]
 
 uses
 ----
@@ -18,4 +29,4 @@ we have the results in hdfs in chunks and we want to load them into hive
 Copyright
 ---------
 
-Copyright (c) 2009 Nate Murray. See LICENSE for details.
+Copyright (c) 2009 Nate Murray, AT&T Interactive
