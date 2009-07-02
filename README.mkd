@@ -11,6 +11,12 @@ pre-alpha. what is implemented is functional, but it still falls fall short of t
 
 under active development.
 
+requirements
+------------
+If you want to run the tests:
+* you'll need to be able to `ssh` into `localhost` using `id_rsa`
+* you'll need `hadoop` setup with the ability to connect to an hdfs server (otherwise the hadoop tests will simply be pending)
+
 friends
 -------
 (basket)[http://github.com/jashmenn/basket/tree/master]

@@ -5,7 +5,7 @@ begin
   require 'jeweler'
   Jeweler::Tasks.new do |gem|
     gem.name = "moveit"
-    gem.summary = %Q{TODO}
+    gem.summary = %Q{`FileUtils` for all the other file systems in your life: scp, ssh, s3, hdfs}
     gem.email = "nate@natemurray.com"
     gem.homepage = "http://github.com/jashmenn/moveit"
     gem.authors = ["Nate Murray"]
