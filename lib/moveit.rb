@@ -39,8 +39,10 @@ module MoveIt
 
     class Hdfs < POSIX # hmm
       def self.has_hadoop?
-        `which hadoop`
-        $? == 0 ? true : false
+        $has_hadoop ||= begin 
+                          `which hadoop`
+                          $? == 0 ? true : false
+                        end
       end
 
       # direct mapping to hadoop fs cmds
@@ -61,21 +63,39 @@ module MoveIt
       end
     end
 
-    def Proxy
+    class Proxy
       attr_accessor :source
       attr_accessor :dest
       def initialize(source_fs, dest_fs)
         @source = source_fs
         @dest = dest_fs
       end
-
+  
+      # this method is basically the point of this library
       def cp(source, destination)
-      end
+        # possibly helpful pieces of information
 
-      def are_fs_on_same_node?
+        # if both fs's are the same class a "cp" will work in any case
+        if @source.class == @dest.class
+          @source.cp(source, destination)
+        end
+
+        # possible sources:
+        # * s3
+        # * hdfs
+        # * posix
+
+        # if same_node?
+        # else
+        #   # tricky!
+        # end
+      end
+  
+      def same_node?
         @source.actor.equals?(@dest.actor)
       end
     end
+
   end
 
   # this class holds delegation to the thing that does the work. 
@@ -124,11 +144,11 @@ module MoveIt
       ssh_session.close if ssh_session
     end
 
-    def equal?(other) 
-      if using_ssh?
+    def equals?(other) 
+      if using_ssh? || other.using_ssh?
         return self.ssh_options == other.ssh_options
       else
-        super
+        true # for local actors, TODO
       end
     end
 
