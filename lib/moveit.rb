@@ -19,6 +19,10 @@ module MoveIt
         @actor = Actor.new(opts)
       end
 
+      def ls(dir)
+        file_list("ls -1 #{dir}")
+      end
+
       def file_list(cmd)
         output = @actor.exec!(cmd)
         output.split("\n")
@@ -26,6 +30,10 @@ module MoveIt
 
       def cleanup
         @actor.cleanup
+      end
+
+      def to_s
+        "#<#{self.class.to_s}:#{self.object_id}, %s>" % [@actor.using_ssh? ? @actor.ssh_options.inspect : "local"]
       end
     end
   end

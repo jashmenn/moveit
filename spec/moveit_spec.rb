@@ -21,22 +21,25 @@ describe "Moveit" do
   end
 
   describe "local & ssh actions" do
-
     [MoveIt::FileSystem::POSIX.new, MoveIt::FileSystem::POSIX.new(:ssh_options => {:host => "localhost"})].each do |server|
       before(:each) do 
         @server = server
       end
 
-      it "#{server} should list files" do
-        files = @server.file_list("ls -1 #{@dir}/foreign")
-        files.size.should == 3
-        %w{one two three}.each do |number|
-          files.include?(number).should be_true
+      describe "listing files" do
+        # sorry this is ugly, but its DRY and they're testing the same thing
+        [[:file_list, lambda{|s,d| s.file_list("ls -1 #{d}")}], [:ls, lambda{|s,d| s.ls(d)}]].each do |name, prok|
+          it "#{server} ##{name}" do
+            files = prok.call(@server, "#{@dir}/foreign")
+            files.size.should == 3
+            %w{one two three}.each do |number|
+              files.include?(number).should be_true
+            end
+          end
         end
-      end
-    end
-
-  end
+      end # end listing files
+    end # end local and ssh
+  end 
 
   after(:each) do
     FileUtils.rm_rf(@dir)
